@@ -1,12 +1,12 @@
 # Weather API
 
-A REST API that returns real-time weather data for any city in the world.
+A REST API that returns real time weather data for any city in the world.
 
-Built with FastAPI and Python. Uses the Open-Meteo API — no API key required.
+Built with FastAPI and Python. Uses the Open-Meteo API. no API key required.
 
 Features
 - Search any city and get current temperature, wind speed, and conditions
-- Includes a browser-based dashboard at `/dashboard`
+- Includes a browser based dashboard at `/dashboard`
 - Returns temperature in °F and wind speed in mph
 
 How to run it
