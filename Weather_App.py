@@ -8,24 +8,30 @@ app = FastAPI()
 def home():
     return {"message": "Weather API is running"}
 
+# takes a city name from the URL and returns weather data for it
 @app.get("/weather/{city}")
 def get_weather(city: str):
+    # first hit the geocoding API to turn the city name into coordinates
     geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1"
     geo_response = requests.get(geo_url)
     geo_data = geo_response.json()
 
+    # if the city doesn't come back in the results, bail out early
     if not geo_data.get("results"):
         return {"error": f"City '{city}' not found"}
 
+    # pull the lat/lon and city info out of the first result
     lat = geo_data["results"][0]["latitude"]
     lon = geo_data["results"][0]["longitude"]
     city_name = geo_data["results"][0]["name"]
     country = geo_data["results"][0]["country"]
 
+    # use those coordinates to get the actual weather
     weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true"
     weather_response = requests.get(weather_url)
     weather_data = weather_response.json()
 
+    # open-meteo gives temp in Celsius and wind in km/h, so convert both
     current = weather_data["current_weather"]
     temp_f = round((current["temperature"] * 9/5) + 32)
     wind_mph = round(current["windspeed"] * 0.621371)
@@ -38,6 +44,7 @@ def get_weather(city: str):
         "weather_code": current["weathercode"]
     }
 
+# serves the frontend — hit /dashboard in the browser to see the UI
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard():
     return """
@@ -129,6 +136,7 @@ def dashboard():
   </div>
 
   <script>
+    // open-meteo uses weather codes instead of plain text — this maps them to emojis
     function getIcon(code) {
       if (code === 0) return "☀️";
       if (code <= 2) return "🌤️";
@@ -142,6 +150,7 @@ def dashboard():
       return "🌡️";
     }
 
+    // same idea, just returns a readable string for the condition box
     function getCondition(code) {
       if (code === 0) return "Clear";
       if (code <= 2) return "Mostly Clear";
@@ -155,10 +164,12 @@ def dashboard():
       return "Unknown";
     }
 
+    // lets the user hit Enter instead of clicking the button
     document.getElementById('city-input').addEventListener('keydown', e => {
       if (e.key === 'Enter') fetchWeather();
     });
 
+    // main function — calls our /weather endpoint and updates the card
     async function fetchWeather() {
       const city = document.getElementById('city-input').value.trim();
       if (!city) return;
@@ -167,6 +178,7 @@ def dashboard():
       const resultEl = document.getElementById('result');
       const loadingEl = document.getElementById('loading');
 
+      // reset the UI before fetching so old data doesn't linger
       errorEl.classList.add('hidden');
       resultEl.classList.add('hidden');
       loadingEl.classList.remove('hidden');
@@ -182,6 +194,7 @@ def dashboard():
           return;
         }
 
+        // plug all the weather values into the page
         const code = data.weather_code;
         document.getElementById('icon').textContent = getIcon(code);
         document.getElementById('temp').textContent = data.temperature_f;
